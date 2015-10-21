@@ -11,9 +11,6 @@ type ParticipantRole =
     | Presenter
     | Attendee
 
-type Location = Location of string
-type LocationList = Location list
-
 type ParticipantSchedulingInfo = {
     Username: Username;
     Role: ParticipantRole;
@@ -23,8 +20,8 @@ type ParticipantSchedulingInfo = {
 
 type ProposedMeetupInfo = {
     Description: string;
+    Location: string;
     TargetDates: DateRange;
-    PotentialLocations: LocationList;
     Participants: ParticipantSchedulingInfo list;
 }
 
@@ -32,15 +29,15 @@ type Meetup =
     | ProposedMeetup of ProposedMeetupInfo
     | ScheduledMeetup
 
-let proposeMeetup1 description (targetDates: DateRange) =
+let proposeMeetup1 description location (targetDates: DateRange) =
     match targetDates with
     | (first, last) when first.Date < DateTime.Now.Date -> None
     | (first, last) when first.Date > last.Date -> None
     | (first, last) ->
         Some { 
             Description=description; 
+            Location=location;
             TargetDates=(first.Date, last.Date); 
-            PotentialLocations=[]; 
             Participants=[]
         }
 
@@ -57,10 +54,45 @@ let makeValidTargetDates (first:DateTime, last:DateTime) =
     (first.Date, last.Date)
 
 
-let proposeMeetup2 description (targetDates: DateRange) =
+let proposeMeetup2 description location (targetDates: DateRange) =
     { 
         Description=description; 
         TargetDates=makeValidTargetDates targetDates; 
-        PotentialLocations=[]; 
+        Location=location; 
         Participants=[]
+    }
+
+let private createParticipant username =
+    {
+        Username = username;
+        Role = Attendee;
+        AvailableDates = [];
+        UnavailableDates = [];
+    }
+
+let private removeParticipantInternal
+    username (participants: ParticipantSchedulingInfo list) =
+    participants
+    |> List.filter (fun p -> p.Username <> username)
+
+let private updateParticipant participant meetup =
+    { meetup with
+        Participants = participant ::
+                       (removeParticipantInternal participant.Username meetup.Participants) 
+    }
+
+let getParticipant username meetup =
+    meetup.Participants
+    |> List.tryFind (fun p -> p.Username = username)
+
+let addParticipant username meetup = 
+    match getParticipant username meetup with
+    | Some participant -> meetup
+    | None -> { meetup with
+                    Participants = (createParticipant username) :: meetup.Participants
+              }
+
+let removeParticipant username meetup =
+    { meetup with
+        Participants = removeParticipantInternal username meetup.Participants
     }

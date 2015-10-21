@@ -44,3 +44,23 @@ let proposeMeetup1 description (targetDates: DateRange) =
             Participants=[]
         }
 
+let makeValidTargetDates (first:DateTime, last:DateTime) =
+    let today = DateTime.Now.Date
+    let oneYearFromToday = today.AddDays(365.0).Date
+
+    let first = max today first
+    let first = min first oneYearFromToday
+  
+    let last = max first last 
+    let last = min last (first.AddDays(365.0))
+
+    (first.Date, last.Date)
+
+
+let proposeMeetup2 description (targetDates: DateRange) =
+    { 
+        Description=description; 
+        TargetDates=makeValidTargetDates targetDates; 
+        PotentialLocations=[]; 
+        Participants=[]
+    }

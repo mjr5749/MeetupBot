@@ -75,3 +75,30 @@ let changeParticipantRole username (role:ParticipantRole) meetup =
     | Some participant -> 
         updateParticipant { participant with Role=role } meetup
     | None -> meetup
+
+let isDateInRange (date:DateTime) meetup =
+    let (first,last) = meetup.TargetDates 
+    first <= date.Date && date.Date <= last
+       
+let private removeDate participant (date:DateTime) =
+    let removeDate = (fun (d:DateTime) -> d.Date <> date.Date)
+    { participant with
+        AvailableDates = List.filter removeDate participant.AvailableDates;
+        UnavailableDates = List.filter removeDate participant.UnavailableDates;
+    }
+
+let addAvailableDate username date meetup =
+    match isDateInRange date meetup, getParticipant username meetup with
+    | true, Some participant ->
+        updateParticipant { removeDate participant date with 
+                              AvailableDates=(date.Date :: participant.AvailableDates) 
+                          } meetup
+    | _ -> meetup
+
+let addUnavailableDate username date meetup =
+    match isDateInRange date meetup, getParticipant username meetup with
+    | true, Some participant ->
+        updateParticipant { removeDate participant date with 
+                              UnavailableDates=(date.Date :: participant.UnavailableDates) 
+                          } meetup
+    | _ -> meetup

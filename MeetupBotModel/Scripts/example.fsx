@@ -21,8 +21,13 @@ let meetup2 =
     |> addAvailableDate (Username "mrichards") (DateTime.Parse("2015-11-08"))
     |> addUnavailableDate (Username "mrichards") (DateTime.Parse("2015-11-08"))
 
-// Adding a date outside of the target dates for the meetup - does nothing
-let meetup3 =
+// Adding a date as unavailable twice does not duplicate it
+let meetup3 = 
     meetup2
+    |> addUnavailableDate (Username "mrichards") (DateTime.Parse("2015-11-08"))
+
+// Adding a date outside of the target dates for the meetup - does nothing
+let meetup4 =
+    meetup3
     |> addAvailableDate (Username "mrichards") (DateTime.Now.AddDays(-7.0))
                      

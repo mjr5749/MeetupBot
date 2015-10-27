@@ -14,6 +14,20 @@ let proposeMeetup' description location (targetDates: DateRange) =
             Participants=[]
         }
 
+let proposeMeetup'' description location (targetDates: DateRange) =
+    match targetDates with
+    | (first, last) when first.Date < DateTime.Now.Date -> 
+        failwith "Invalid first date"
+    | (first, last) when first.Date > last.Date -> 
+        failwith "Invalid last date"
+    | (first, last) ->
+        Some { 
+            Description=description; 
+            Location=location;
+            TargetDates=(first.Date, last.Date); 
+            Participants=[]
+        }
+
 let private makeValidTargetDates (first:DateTime, last:DateTime) =
     let today = DateTime.Now.Date
     let oneYearFromToday = today.AddDays(365.0).Date
@@ -43,17 +57,6 @@ let private createParticipant username =
         UnavailableDates = [];
     }
 
-let private removeParticipantInternal
-    username (participants: ParticipantSchedulingInfo list) =
-    participants
-    |> List.filter (fun p -> p.Username <> username)
-
-let private updateParticipant participant meetup =
-    { meetup with
-        Participants = participant ::
-                       (removeParticipantInternal participant.Username meetup.Participants) 
-    }
-
 let getParticipant username meetup =
     meetup.Participants
     |> List.tryFind (fun p -> p.Username = username)
@@ -66,9 +69,14 @@ let addParticipant username meetup =
               }
 
 let removeParticipant username meetup =
+    let removeUser = List.filter (fun p -> p.Username <> username)
     { meetup with
-        Participants = removeParticipantInternal username meetup.Participants
+        Participants = removeUser meetup.Participants
     }
+
+let private updateParticipant participant meetup =
+    let meetup = removeParticipant participant.Username meetup 
+    { meetup with Participants = participant :: meetup.Participants }
 
 let changeParticipantRole username (role:ParticipantRole) meetup =
     match getParticipant username meetup with
@@ -90,7 +98,8 @@ let private removeDate participant (date:DateTime) =
 let addAvailableDate username date meetup =
     match isDateInRange date meetup, getParticipant username meetup with
     | true, Some participant ->
-        updateParticipant { removeDate participant date with 
+        let participant = removeDate participant date
+        updateParticipant { participant with 
                               AvailableDates=(date.Date :: participant.AvailableDates) 
                           } meetup
     | _ -> meetup
@@ -98,7 +107,8 @@ let addAvailableDate username date meetup =
 let addUnavailableDate username date meetup =
     match isDateInRange date meetup, getParticipant username meetup with
     | true, Some participant ->
-        updateParticipant { removeDate participant date with 
+        let participant = removeDate participant date
+        updateParticipant { participant with 
                               UnavailableDates=(date.Date :: participant.UnavailableDates) 
                           } meetup
     | _ -> meetup

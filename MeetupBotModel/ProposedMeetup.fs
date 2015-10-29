@@ -112,3 +112,57 @@ let addUnavailableDate username date meetup =
                               UnavailableDates=(date.Date :: participant.UnavailableDates) 
                           } meetup
     | _ -> meetup
+
+let availabilityCheck' meetup username (date:DateTime) =
+    let dateSearch = (fun (d:DateTime) -> d.Date = date.Date)
+    match getParticipant username meetup with
+    | Some participant -> 
+        match List.tryFind dateSearch participant.AvailableDates with
+        | Some _ -> Some Available
+        | None -> 
+            match List.tryFind dateSearch participant.UnavailableDates with
+            | Some _ -> Some Unavailable
+            | None -> Some Unspecified
+    | None -> None
+    
+let availabilityCheck'' meetup username (date:DateTime) =
+    match getParticipant username meetup with
+    | Some participant ->
+        printfn "Optimizing date search..." 
+        let availableDates = participant.AvailableDates |> Set.ofList
+        let unavailableDates = participant.UnavailableDates |> Set.ofList
+
+        if Set.contains date availableDates then Some Available
+        else if Set.contains date unavailableDates then Some Unavailable
+        else Some Unspecified
+    | None -> None
+
+let availabilityCheck''' meetup username =
+    match getParticipant username meetup with
+    | Some participant ->
+        printfn "Optimizing date search..." 
+        let availableDates = participant.AvailableDates |> Set.ofList
+        let unavailableDates = participant.UnavailableDates |> Set.ofList
+
+        fun (date:DateTime) ->
+            if Set.contains date availableDates then Some Available
+            else if Set.contains date unavailableDates then Some Unavailable
+            else Some Unspecified
+    | None -> (fun _ -> None)
+
+let availabilityCheck meetup username =
+    match getParticipant username meetup with
+    | Some participant ->
+        let availableDates = lazy ( 
+            printfn "Optimizing available date search..."
+            participant.AvailableDates |> Set.ofList )
+        let unavailableDates = lazy ( 
+            printfn "Optimizing unavailable date search..."
+            participant.UnavailableDates |> Set.ofList )
+
+        fun (date:DateTime) ->
+            if Set.contains date (availableDates.Force()) then Some Available
+            else if Set.contains date (unavailableDates.Force()) then Some Unavailable
+            else Some Unspecified
+    | None -> (fun _ -> None)
+    

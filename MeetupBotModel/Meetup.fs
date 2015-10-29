@@ -29,3 +29,7 @@ type Meetup =
     | ProposedMeetup of ProposedMeetupInfo
     | ScheduledMeetup
 
+type Availability =
+    | Available
+    | Unavailable
+    | Unspecified

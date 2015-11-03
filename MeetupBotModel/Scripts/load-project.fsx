@@ -4,3 +4,4 @@
 #load "../AssemblyInfo.fs"
       "../Meetup.fs"
       "../ProposedMeetup.fs"
+      "../ProposedMeetupTests.fs"

@@ -128,7 +128,7 @@ let availabilityCheck' meetup username (date:DateTime) =
 let availabilityCheck'' meetup username (date:DateTime) =
     match getParticipant username meetup with
     | Some participant ->
-        printfn "Optimizing date search..." 
+        //printfn "Optimizing date search..." 
         let availableDates = participant.AvailableDates |> Set.ofList
         let unavailableDates = participant.UnavailableDates |> Set.ofList
 
@@ -140,7 +140,7 @@ let availabilityCheck'' meetup username (date:DateTime) =
 let availabilityCheck''' meetup username =
     match getParticipant username meetup with
     | Some participant ->
-        printfn "Optimizing date search..." 
+        //printfn "Optimizing date search..." 
         let availableDates = participant.AvailableDates |> Set.ofList
         let unavailableDates = participant.UnavailableDates |> Set.ofList
 
@@ -154,15 +154,15 @@ let availabilityCheck meetup username =
     match getParticipant username meetup with
     | Some participant ->
         let availableDates = lazy ( 
-            printfn "Optimizing available date search..."
+            //printfn "Optimizing available date search..."
             participant.AvailableDates |> Set.ofList )
         let unavailableDates = lazy ( 
-            printfn "Optimizing unavailable date search..."
+            //printfn "Optimizing unavailable date search..."
             participant.UnavailableDates |> Set.ofList )
 
         fun (date:DateTime) ->
-            if Set.contains date (availableDates.Force()) then Some Available
-            else if Set.contains date (unavailableDates.Force()) then Some Unavailable
+            if Set.contains date.Date (availableDates.Force()) then Some Available
+            else if Set.contains date.Date (unavailableDates.Force()) then Some Unavailable
             else Some Unspecified
     | None -> (fun _ -> None)
     

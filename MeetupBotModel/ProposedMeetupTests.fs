@@ -102,3 +102,29 @@ type BasicProposedMeetupTests() =
             |> removeParticipant x.mrichards
             
         meetup.Participants |> should equal []
+
+[<TestFixture>]
+[<Category("Availability Check Tests")>]
+type AvailabiltyCheckTests() =
+    member x.mrichards = Username "mrichards"
+    member x.CreateMeetup() = 
+        proposeMeetup "Availability Checks" "Rochester, NY" (DateTime.Now, DateTime.Now.AddDays(30.0))
+        |> addParticipant x.mrichards
+        |> addAvailableDate x.mrichards (DateTime.Now.AddDays(1.0).Date)
+        |> addAvailableDate x.mrichards (DateTime.Now.AddDays(3.0).Date)
+        |> addUnavailableDate x.mrichards (DateTime.Now.AddDays(2.0).Date)
+        |> addUnavailableDate x.mrichards (DateTime.Now.AddDays(4.0).Date)
+
+    [<Test>]
+    member x.``availability check works for Available,Unavailable and Unspecified`` () =
+        let meetup = x.CreateMeetup()
+        let checkUserAvail = availabilityCheck meetup x.mrichards
+
+        [1 .. 7] 
+        |> List.map (fun i -> DateTime.Now.AddDays(float i))
+        |> List.map checkUserAvail
+        // |> printfn "%A"
+        |> should equal 
+            [Some(Available); Some(Unavailable);
+             Some(Available); Some(Unavailable);
+             Some(Unspecified); Some(Unspecified); Some(Unspecified) ]

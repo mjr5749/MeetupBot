@@ -141,9 +141,7 @@ type AvailabiltyCheckTests() =
         let checkUserAvail = checkAvailability meetup x.mrichards
 
         [1 .. 7] 
-        |> List.map (fun i -> DateTime.Now.AddDays(float i))
-        |> List.map checkUserAvail
-        // |> printfn "%A"
+        |> List.map (float >> DateTime.Now.AddDays >> checkUserAvail)
         |> should equal 
             [Some(Available); Some(Unavailable);
              Some(Available); Some(Unavailable);

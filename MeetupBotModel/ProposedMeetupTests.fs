@@ -93,7 +93,29 @@ type BasicProposedMeetupTests() =
         |> should equal 
             [ Some(Available); Some(Available); Some(Available);
               Some(Available); Some(Available); 
-              Some(Unspecified) (* outside target dates *) ]
+              None (* outside target dates *) ]
+
+    [<Test>] 
+    member x.``changing target dates is reflected in checkAvailability`` () =
+        let dates = 
+            [0 .. 5] // 6 weeks
+            |> List.map ( (*) 7 >> float >> DateTime.Now.AddDays )
+
+        let meetup =
+            x.CreateBasicMeetup()
+            |> resetAllDates x.mrichards
+            |> addAvailableDates x.mrichards (Set dates)
+            |> changeTargetDates (DateTime.Now.AddDays(2.0), DateTime.Now.AddDays(60.0))
+        
+        let checkUserAvail = checkAvailability meetup x.mrichards
+
+        dates 
+        |> List.map checkUserAvail
+        |> should equal 
+            [ None; (* outside target dates *)
+              Some(Available); Some(Available);
+              Some(Available); Some(Available); 
+              Some(Unspecified) (* was not valid when addAvailableDates called *) ]
 
     [<Test>]
     member x.``participant default role is Attendee`` () =

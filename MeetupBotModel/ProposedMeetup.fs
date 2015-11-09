@@ -4,6 +4,15 @@ open System
 
 let private stripTime (date:DateTime) = date.Date
 
+let private isDateInRange (date:DateTime) (targetDates:DateRange) =
+    let (first,last) = targetDates 
+    first <= date.Date && date.Date <= last
+
+let private toValidMeetupDates dates targetDates =
+    dates
+    |> Set.map stripTime
+    |> Set.filter (fun date -> isDateInRange date targetDates)
+
 let private makeValidTargetDates (first:DateTime, last:DateTime) =
     let today = DateTime.Now.Date
     let oneYearFromToday = today.AddDays(365.0).Date
@@ -17,12 +26,32 @@ let private makeValidTargetDates (first:DateTime, last:DateTime) =
     (first.Date, last.Date)
 
 
-let proposeMeetup description location (targetDates: DateRange) =
+let proposeMeetup description location (targetDates:DateRange) =
     { 
         Description=description; 
         TargetDates=makeValidTargetDates targetDates; 
         Location=location; 
         Participants=[]
+    }
+
+let changeDescription description meetup =
+    { meetup with Description = description }
+
+let changeLocation location meetup =
+    { meetup with Location = location }
+
+let changeTargetDates (targetDates:DateRange) meetup =
+    let targetDates = makeValidTargetDates targetDates
+    { meetup with
+        TargetDates = targetDates
+        Participants = 
+            meetup.Participants
+            |> List.map (fun p ->
+                { p with
+                    AvailableDates = toValidMeetupDates p.AvailableDates targetDates
+                    UnavailableDates = toValidMeetupDates p.UnavailableDates targetDates
+                }
+            )
     }
 
 let private createParticipant username =
@@ -60,15 +89,6 @@ let changeParticipantRole username (role:ParticipantRole) meetup =
         updateParticipant { participant with Role=role } meetup
     | None -> meetup
 
-let isDateInRange (date:DateTime) meetup =
-    let (first,last) = meetup.TargetDates 
-    first <= date.Date && date.Date <= last
-
-let private toValidMeetupDates dates meetup =
-    dates
-    |> Set.map stripTime
-    |> Set.filter (fun date -> isDateInRange date meetup)
-
 let resetAllDates username meetup =
     match getParticipant username meetup with
     | Some participant ->
@@ -79,7 +99,7 @@ let resetAllDates username meetup =
     | None -> meetup
           
 let resetDates username dates meetup =
-    let dates = toValidMeetupDates dates meetup
+    let dates = toValidMeetupDates dates meetup.TargetDates
     match getParticipant username meetup with
     | Some participant ->
         updateParticipant { participant with 
@@ -89,7 +109,7 @@ let resetDates username dates meetup =
     | None -> meetup
 
 let addAvailableDates username dates meetup =
-    let dates = toValidMeetupDates dates meetup
+    let dates = toValidMeetupDates dates meetup.TargetDates
     match getParticipant username meetup with
     | Some participant ->
         updateParticipant { participant with 
@@ -102,7 +122,7 @@ let addAvailableDate username date meetup =
     addAvailableDates username (Set.singleton date) meetup
 
 let addUnavailableDates username dates meetup =
-    let dates = toValidMeetupDates dates meetup
+    let dates = toValidMeetupDates dates meetup.TargetDates
     match getParticipant username meetup with
     | Some participant ->
         updateParticipant { participant with 
@@ -115,10 +135,12 @@ let addUnavailableDate username date meetup =
     addUnavailableDates username (Set.singleton date) meetup
 
 let checkAvailability meetup username (date:DateTime) =
-    match getParticipant username meetup with
-    | Some participant ->
-        if Set.contains date.Date participant.AvailableDates then Some Available
-        else if Set.contains date.Date participant.UnavailableDates then Some Unavailable
-        else Some Unspecified
-    | None -> None
+    if isDateInRange date meetup.TargetDates then
+        match getParticipant username meetup with
+        | Some participant ->
+            if Set.contains date.Date participant.AvailableDates then Some Available
+            else if Set.contains date.Date participant.UnavailableDates then Some Unavailable
+            else Some Unspecified
+        | None -> None
+    else None
     

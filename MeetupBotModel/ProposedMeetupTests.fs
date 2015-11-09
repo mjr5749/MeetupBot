@@ -75,6 +75,26 @@ type BasicProposedMeetupTests() =
         participant.AvailableDates.Count |> should equal 1
         participant.UnavailableDates.Count |> should equal 0
                       
+    [<Test>] 
+    member x.``adding multiple available dates at once`` () =
+        let dates = 
+            [0 .. 5] // 6 weeks
+            |> List.map ( (*) 7 >> float >> DateTime.Now.AddDays )
+
+        let meetup =
+            x.CreateBasicMeetup()
+            |> resetAllDates x.mrichards
+            |> addAvailableDates x.mrichards (Set dates)
+        
+        let checkUserAvail = checkAvailability meetup x.mrichards
+
+        dates 
+        |> List.map checkUserAvail
+        |> should equal 
+            [ Some(Available); Some(Available); Some(Available);
+              Some(Available); Some(Available); 
+              Some(Unspecified) (* outside target dates *) ]
+
     [<Test>]
     member x.``participant default role is Attendee`` () =
         let user = (Username "testuser")

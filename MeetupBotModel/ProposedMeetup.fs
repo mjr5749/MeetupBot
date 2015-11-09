@@ -2,6 +2,8 @@
 
 open System
 
+let private stripTime (date:DateTime) = date.Date
+
 let proposeMeetup' description location (targetDates: DateRange) =
     match targetDates with
     | (first, last) when first.Date < DateTime.Now.Date -> None
@@ -87,24 +89,56 @@ let changeParticipantRole username (role:ParticipantRole) meetup =
 let isDateInRange (date:DateTime) meetup =
     let (first,last) = meetup.TargetDates 
     first <= date.Date && date.Date <= last
-       
-let addAvailableDate username date meetup =
-    match isDateInRange date meetup, getParticipant username meetup with
-    | true, Some participant ->
+
+let private toValidMeetupDates dates meetup =
+    dates
+    |> Set.map stripTime
+    |> Set.filter (fun date -> isDateInRange date meetup)
+
+let resetAllDates username meetup =
+    match getParticipant username meetup with
+    | Some participant ->
         updateParticipant { participant with 
-                              AvailableDates = Set.add date.Date participant.AvailableDates
-                              UnavailableDates = Set.remove date.Date participant.UnavailableDates
+                              AvailableDates = Set.empty 
+                              UnavailableDates = Set.empty 
                           } meetup
-    | _ -> meetup
+    | None -> meetup
+          
+let resetDates username dates meetup =
+    let dates = toValidMeetupDates dates meetup
+    match getParticipant username meetup with
+    | Some participant ->
+        updateParticipant { participant with 
+                              AvailableDates = Set.difference participant.AvailableDates dates
+                              UnavailableDates = Set.difference participant.UnavailableDates dates
+                          } meetup
+    | None -> meetup
+
+let addAvailableDates username dates meetup =
+    let dates = toValidMeetupDates dates meetup
+    match getParticipant username meetup with
+    | Some participant ->
+        updateParticipant { participant with 
+                              AvailableDates = Set.union participant.AvailableDates dates
+                              UnavailableDates = Set.difference participant.UnavailableDates dates
+                          } meetup
+    | None -> meetup
+
+let addAvailableDate username date meetup =
+    addAvailableDates username (Set.singleton date) meetup
+
+let addUnavailableDates username dates meetup =
+    let dates = toValidMeetupDates dates meetup
+    match getParticipant username meetup with
+    | Some participant ->
+        updateParticipant { participant with 
+                              AvailableDates = Set.difference participant.AvailableDates dates
+                              UnavailableDates = Set.union participant.UnavailableDates dates
+                          } meetup
+    | None -> meetup
 
 let addUnavailableDate username date meetup =
-    match isDateInRange date meetup, getParticipant username meetup with
-    | true, Some participant ->
-        updateParticipant { participant with 
-                              UnavailableDates = Set.add date.Date participant.UnavailableDates 
-                              AvailableDates = Set.remove date.Date participant.AvailableDates
-                          } meetup
-    | _ -> meetup
+    addUnavailableDates username (Set.singleton date) meetup
 
 let checkAvailability meetup username (date:DateTime) =
     match getParticipant username meetup with

@@ -4,32 +4,6 @@ open System
 
 let private stripTime (date:DateTime) = date.Date
 
-let proposeMeetup' description location (targetDates: DateRange) =
-    match targetDates with
-    | (first, last) when first.Date < DateTime.Now.Date -> None
-    | (first, last) when first.Date > last.Date -> None
-    | (first, last) ->
-        Some { 
-            Description=description; 
-            Location=location;
-            TargetDates=(first.Date, last.Date); 
-            Participants=[]
-        }
-
-let proposeMeetup'' description location (targetDates: DateRange) =
-    match targetDates with
-    | (first, last) when first.Date < DateTime.Now.Date -> 
-        failwith "Invalid first date"
-    | (first, last) when first.Date > last.Date -> 
-        failwith "Invalid last date"
-    | (first, last) ->
-        Some { 
-            Description=description; 
-            Location=location;
-            TargetDates=(first.Date, last.Date); 
-            Participants=[]
-        }
-
 let private makeValidTargetDates (first:DateTime, last:DateTime) =
     let today = DateTime.Now.Date
     let oneYearFromToday = today.AddDays(365.0).Date

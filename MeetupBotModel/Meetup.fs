@@ -3,7 +3,7 @@
 open System
 
 type DateRange = DateTime * DateTime
-type DateList = DateTime list
+type DateList = Set<DateTime>
 
 type Username = Username of string
 type ParticipantRole = 

@@ -27,11 +27,11 @@ type BasicProposedMeetupTests() =
             |> getParticipant x.mrichards |> Option.get
 
         participant.Role |> should equal Presenter
-        participant.AvailableDates.Length |> should equal 1
+        participant.AvailableDates.Count |> should equal 1
 
     [<Test>]
     member x.``participant has one available date`` () =
-        x.CreateBasicMeetup().Participants.Head.AvailableDates.Length 
+        x.CreateBasicMeetup().Participants.Head.AvailableDates.Count
         |> should equal 1
 
     [<Test>]
@@ -44,11 +44,11 @@ type BasicProposedMeetupTests() =
             |> getParticipant x.mrichards
             |> Option.get
 
-        List.tryFind (fun d -> d = date) participant.AvailableDates
-        |> should equal None
+        Set.contains date participant.AvailableDates
+        |> should equal false
         
-        List.tryFind (fun d -> d = date) participant.UnavailableDates
-        |> should equal (Some date)
+        Set.contains date participant.UnavailableDates
+        |> should equal true 
 
     [<Test>]
     member x.``adding an unavailable date twice does not duplicate it`` () =
@@ -60,7 +60,7 @@ type BasicProposedMeetupTests() =
             |> getParticipant x.mrichards
             |> Option.get
 
-        participant.UnavailableDates.Length |> should equal 1
+        participant.UnavailableDates.Count |> should equal 1
 
     [<Test>]
     member x.``adding a date outside of the target date range does nothing`` () =
@@ -72,8 +72,8 @@ type BasicProposedMeetupTests() =
             |> getParticipant x.mrichards
             |> Option.get
 
-        participant.AvailableDates.Length |> should equal 1
-        participant.UnavailableDates.Length |> should equal 0
+        participant.AvailableDates.Count |> should equal 1
+        participant.UnavailableDates.Count |> should equal 0
                       
     [<Test>]
     member x.``participant default role is Attendee`` () =
@@ -118,7 +118,7 @@ type AvailabiltyCheckTests() =
     [<Test>]
     member x.``availability check works for Available,Unavailable and Unspecified`` () =
         let meetup = x.CreateMeetup()
-        let checkUserAvail = availabilityCheck meetup x.mrichards
+        let checkUserAvail = checkAvailability meetup x.mrichards
 
         [1 .. 7] 
         |> List.map (fun i -> DateTime.Now.AddDays(float i))

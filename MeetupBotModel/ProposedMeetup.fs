@@ -8,6 +8,12 @@ let private isDateInRange (date:DateTime) (targetDates:DateRange) =
     let (first,last) = targetDates 
     first <= date.Date && date.Date <= last
 
+let private datesAsSeq (targetDates:DateRange) =
+    let (first, last) = targetDates
+    let (first, last) = (first.Date, last.Date)
+    Seq.initInfinite (float >> first.AddDays)
+    |> Seq.takeWhile (fun date -> date <= last)
+
 let private toValidMeetupDates dates targetDates =
     dates
     |> Set.map stripTime
@@ -144,3 +150,9 @@ let checkAvailability meetup username (date:DateTime) =
         | None -> None
     else None
     
+let createSchedule meetup =
+    let dateSeq = datesAsSeq meetup.TargetDates
+
+    let scheduleForDate (date:DateTime) =
+        meetup.Participants
+        |> 
